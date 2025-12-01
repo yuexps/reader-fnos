@@ -57,6 +57,10 @@ start_process() {
         return 0
     fi
 
+    # 设置编码环境变量（在 Java 启动前设置）
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+
     JAVA_CMD=$(get_java_cmd)
     if [ -z "$JAVA_CMD" ]; then
         log_msg "ERROR: Java not found! Please install JDK first."
@@ -95,9 +99,6 @@ start_process() {
     JAVA_OPTS="${JAVA_OPTS} -Dsun.jnu.encoding=UTF-8"
     JAVA_OPTS="${JAVA_OPTS} -Dsun.stdout.encoding=UTF-8"
     JAVA_OPTS="${JAVA_OPTS} -Dsun.stderr.encoding=UTF-8"
-    # 设置默认 locale 为 UTF-8
-    export LANG=zh_CN.UTF-8
-    export LC_ALL=zh_CN.UTF-8
     
     JAVA_OPTS="${JAVA_OPTS} -Dreader.app.workDir=${TRIM_APPDEST}"
     JAVA_OPTS="${JAVA_OPTS} -Dreader.app.storagePath=${STORAGE_DIR}"
