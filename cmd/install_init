@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Reader 安装前初始化脚本
+# 检查Java环境等
+
+exit 0

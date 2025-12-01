@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# Reader 安装后回调脚本
+# 使用安装向导中的用户输入生成配置文件
+
+# 创建必要的目录
+mkdir -p "${TRIM_PKGVAR}/storage"
+mkdir -p "${TRIM_PKGVAR}/storage/localStore"  # 本地书仓目录
+mkdir -p "${TRIM_PKGVAR}/logs"
+
+# 从向导获取配置（字段名直接作为环境变量）
+RUN_MODE="${wizard_run_mode:-multi}"
+INVITE_CODE="${wizard_invite_code:-}"
+SECURE_KEY="${wizard_secure_key:-}"
+USER_LIMIT="${wizard_user_limit:-15}"
+CACHE_CHAPTER="${wizard_cache_chapter:-true}"
+ENABLE_WEBDAV="${wizard_enable_webdav:-true}"
+ENABLE_LOCALSTORE="${wizard_enable_localstore:-true}"
+
+# 转换运行模式为布尔值
+if [ "$RUN_MODE" = "single" ]; then
+    SECURE_MODE="false"
+else
+    SECURE_MODE="true"
+fi
+
+# 生成配置文件
+CONFIG_FILE="${TRIM_PKGETC}/application.properties"
+cat > "${CONFIG_FILE}" << EOF
+# Reader 阅读器配置文件
+# 由安装向导自动生成
+
+# 是否多用户模式 (true=多用户需登录, false=单用户无需登录)
+reader.app.secure=${SECURE_MODE}
+
+# 邀请码（多用户模式下有效，为空则开放注册）
+reader.app.inviteCode=${INVITE_CODE}
+
+# 管理密码（多用户模式下有效，用于管理用户空间）
+reader.app.secureKey=${SECURE_KEY}
+
+# 是否缓存章节内容
+reader.app.cacheChapterContent=${CACHE_CHAPTER}
+
+# 用户上限（最大15）
+reader.app.userLimit=${USER_LIMIT}
+
+# 是否开启调试日志
+reader.app.debugLog=false
+
+# 书架自动更新间隔，单位分钟（必须是10的倍数）
+reader.app.shelfUpdateInteval=10
+
+# 新用户默认是否启用 WebDAV（用于与阅读App同步）
+reader.app.defaultUserEnableWebdav=${ENABLE_WEBDAV}
+
+# 新用户是否默认启用 本地书仓
+reader.app.defaultUserEnableLocalStore=${ENABLE_LOCALSTORE}
+
+# 新用户是否默认启用 书源编辑
+reader.app.defaultUserEnableBookSource=true
+
+# 新用户是否默认启用 RSS源编辑
+reader.app.defaultUserEnableRssSource=true
+
+# 新用户默认书源数量上限
+reader.app.defaultUserBookSourceLimit=100
+
+# 新用户默认书籍数量上限
+reader.app.defaultUserBookLimit=200
+
+# 是否自动备份用户数据
+reader.app.autoBackupUserData=false
+
+# 用户密码最小长度
+reader.app.minUserPasswordLength=8
+
+# 是否自动清理不活跃用户（0=不清理，>0为清理超过该天数未登录的用户）
+reader.app.autoClearInactiveUser=0
+
+# 服务端口（由系统自动配置，请勿修改）
+reader.server.port=${TRIM_SERVICE_PORT}
+EOF
+
+exit 0

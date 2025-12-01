@@ -1,0 +1,55 @@
+[
+    {
+        "stepTitle": "Reader 配置",
+        "items": [
+            {
+                "type": "radio",
+                "field": "wizard_run_mode",
+                "label": "运行模式",
+                "initValue": "multi",
+                "options": [
+                    {
+                        "label": "多用户模式 - 支持多用户注册登录",
+                        "value": "multi"
+                    },
+                    {
+                        "label": "单用户模式 - 无需登录",
+                        "value": "single"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "wizard_invite_code",
+                "label": "注册邀请码",
+                "initValue": "",
+                "helpText": "留空则开放注册"
+            },
+            {
+                "type": "password",
+                "field": "wizard_secure_key",
+                "label": "管理员密码",
+                "initValue": "",
+                "helpText": "用于管理用户空间"
+            },
+            {
+                "type": "text",
+                "field": "wizard_user_limit",
+                "label": "用户数量上限",
+                "initValue": "15",
+                "rules": [
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "请输入数字"
+                    }
+                ]
+            },
+            {
+                "type": "switch",
+                "field": "wizard_cache_chapter",
+                "label": "缓存章节内容",
+                "initValue": "true"
+            }
+        ]
+    }
+]

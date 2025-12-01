@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Reader 升级前初始化脚本
+
+exit 0

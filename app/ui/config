@@ -1,0 +1,16 @@
+{
+    ".url": {
+        "reader.Application": {
+            "title": "Reader",
+            "icon": "images/icon-{0}.png",
+            "type": "url",
+            "protocol": "http",
+            "port": "22389",
+            "control": {
+                "accessPerm": "editable",
+                "portPerm": "editable",
+                "pathPerm": "editable"
+            }
+        }
+    }
+}

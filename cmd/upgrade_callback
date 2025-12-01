@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Reader 升级后回调脚本
+
+exit 0

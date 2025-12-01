@@ -1,0 +1,99 @@
+[
+    {
+        "stepTitle": "欢迎安装 Reader 阅读",
+        "items": [
+            {
+                "type": "tips",
+                "helpText": "Reader 是一款开源的网络小说阅读器，提供书源管理、书架同步、WebDAV备份等功能。"
+            },
+            {
+                "type": "tips",
+                "helpText": "请阅读 <a target=\"_blank\" href=\"https://github.com/hectorqin/reader\">项目主页</a> 了解更多信息。"
+            }
+        ]
+    },
+    {
+        "stepTitle": "运行模式配置",
+        "items": [
+            {
+                "type": "radio",
+                "field": "wizard_run_mode",
+                "label": "运行模式",
+                "initValue": "single",
+                "options": [
+                    {
+                        "label": "单用户模式（推荐）- 无需登录，适合个人使用",
+                        "value": "single"
+                    },
+                    {
+                        "label": "多用户模式 - 支持多用户注册登录",
+                        "value": "multi"
+                    }
+                ],
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请选择运行模式"
+                    }
+                ]
+            },
+            {
+                "type": "tips",
+                "helpText": "<b>以下选项仅在多用户模式下生效：</b>"
+            },
+            {
+                "type": "text",
+                "field": "wizard_invite_code",
+                "label": "注册邀请码",
+                "initValue": "",
+                "helpText": "多用户模式：留空则开放注册，设置后需要邀请码才能注册"
+            },
+            {
+                "type": "password",
+                "field": "wizard_secure_key",
+                "label": "管理员密码",
+                "initValue": "",
+                "helpText": "多用户模式：用于管理用户空间的密码"
+            },
+            {
+                "type": "text",
+                "field": "wizard_user_limit",
+                "label": "用户数量上限",
+                "initValue": "15",
+                "rules": [
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "请输入数字"
+                    }
+                ],
+                "helpText": "多用户模式：最大支持15个用户"
+            }
+        ]
+    },
+    {
+        "stepTitle": "高级配置",
+        "items": [
+            {
+                "type": "switch",
+                "field": "wizard_cache_chapter",
+                "label": "缓存章节内容",
+                "initValue": "true",
+                "helpText": "开启后会缓存已读章节，减少网络请求"
+            },
+            {
+                "type": "switch",
+                "field": "wizard_enable_webdav",
+                "label": "启用 WebDAV 同步",
+                "initValue": "true",
+                "helpText": "用于与阅读App同步书架和阅读进度"
+            },
+            {
+                "type": "switch",
+                "field": "wizard_enable_localstore",
+                "label": "启用本地书仓",
+                "initValue": "true",
+                "helpText": "允许访问本地书仓中的书籍"
+            }
+        ]
+    }
+]

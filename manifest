@@ -1,0 +1,17 @@
+appname         = reader
+version         = 3.2.14
+desc            = Reader 是一款开源的网络小说阅读器，提供书源管理、书架同步、WebDAV备份等功能，支持多用户模式。
+arch            = x86_64
+maintainer      = hectorqin
+maintainer_url  = https://github.com/hectorqin/reader
+distributor     = yuexps
+distributor_url = https://github.com/yuexps/reader-fnos
+os_min_ver      = 0.8.1
+display_name    = Reader
+desktop_applaunchname = reader.Application
+service_port    = 22389
+reloadui        = yes
+desktop_uidir   = ui
+changelog       = Reader 服务器版 3.2.14
+source          = thirdparty
+install_dep_apps = java-17-openjdk

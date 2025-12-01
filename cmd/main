@@ -1,0 +1,236 @@
+#!/bin/bash
+
+# Reader 阅读器 - 飞牛应用主控制脚本
+# 环境变量说明:
+# TRIM_APPDEST    - 应用可执行文件目录 (target目录)  -> @appcenter
+# TRIM_PKGVAR     - 应用数据目录 (var目录)          -> @appdata
+# TRIM_PKGETC     - 应用配置目录 (etc目录)          -> @appconf
+# TRIM_PKGHOME    - 应用home目录 (home目录)         -> @apphome
+# TRIM_PKGTMP     - 应用临时目录 (tmp目录)          -> @apptemp
+# TRIM_SHARES     - 应用共享目录 (shares目录)       -> @appshare
+# TRIM_SERVICE_PORT - 服务端口
+
+# 日志位置
+LOG_DIR="${TRIM_PKGVAR}/logs"
+LOG_FILE="${LOG_DIR}/reader.log"
+PID_FILE="${TRIM_PKGVAR}/reader.pid"
+
+# 数据存储目录
+STORAGE_DIR="${TRIM_PKGVAR}/storage"
+
+# Reader jar文件
+READER_JAR=$(ls ${TRIM_APPDEST}/*.jar 2>/dev/null | head -n 1)
+
+# 确保目录存在
+mkdir -p "${LOG_DIR}"
+mkdir -p "${STORAGE_DIR}"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
+}
+
+get_java_cmd() {
+    # 飞牛应用安装的 Java 17 (优先使用)
+    if [ -x "/var/apps/java-17-openjdk/target/bin/java" ]; then
+        echo "/var/apps/java-17-openjdk/target/bin/java"
+        return
+    fi
+    
+    # 尝试使用系统安装的Java
+    if command -v java &> /dev/null; then
+        echo "java"
+        return
+    fi
+    
+    # 尝试JAVA_HOME
+    if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+        echo "$JAVA_HOME/bin/java"
+        return
+    fi
+    
+    echo ""
+}
+
+start_process() {
+    if status; then
+        log_msg "Reader is already running"
+        return 0
+    fi
+
+    JAVA_CMD=$(get_java_cmd)
+    if [ -z "$JAVA_CMD" ]; then
+        log_msg "ERROR: Java not found! Please install JDK first."
+        return 1
+    fi
+
+    if [ -z "$READER_JAR" ] || [ ! -f "$READER_JAR" ]; then
+        log_msg "ERROR: Reader jar file not found in ${TRIM_APPDEST}"
+        return 1
+    fi
+
+    log_msg "Starting Reader process..."
+    log_msg "Java: ${JAVA_CMD}"
+    log_msg "JAR: ${READER_JAR}"
+    log_msg "Storage: ${STORAGE_DIR}"
+    log_msg "Port: ${TRIM_SERVICE_PORT}"
+
+    # 检查是否多用户模式，根据模式调整内存配置
+    # 多用户模式默认 1GB，单用户模式默认 256MB
+    CONFIG_FILE="${TRIM_PKGETC}/application.properties"
+    IS_SECURE="false"
+    if [ -f "${CONFIG_FILE}" ]; then
+        IS_SECURE=$(grep -E "^reader.app.secure=" "${CONFIG_FILE}" | cut -d'=' -f2 | tr -d '[:space:]')
+    fi
+    
+    if [ "${IS_SECURE}" = "true" ]; then
+        # 多用户模式
+        JAVA_OPTS="-Xms256m -Xmx1024m"
+    else
+        # 单用户模式
+        JAVA_OPTS="-Xms128m -Xmx256m"
+    fi
+    
+    # 设置字符编码，解决中文文件名问题
+    JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
+    JAVA_OPTS="${JAVA_OPTS} -Dsun.jnu.encoding=UTF-8"
+    JAVA_OPTS="${JAVA_OPTS} -Dsun.stdout.encoding=UTF-8"
+    JAVA_OPTS="${JAVA_OPTS} -Dsun.stderr.encoding=UTF-8"
+    # 设置默认 locale 为 UTF-8
+    export LANG=zh_CN.UTF-8
+    export LC_ALL=zh_CN.UTF-8
+    
+    JAVA_OPTS="${JAVA_OPTS} -Dreader.app.workDir=${TRIM_APPDEST}"
+    JAVA_OPTS="${JAVA_OPTS} -Dreader.app.storagePath=${STORAGE_DIR}"
+    # 禁用 JMX 以避免 cgroup v2 兼容性问题
+    JAVA_OPTS="${JAVA_OPTS} -Dspring.jmx.enabled=false"
+
+    # 启动命令
+    CMD="${JAVA_CMD} ${JAVA_OPTS} -jar ${READER_JAR}"
+    CMD="${CMD} --spring.config.additional-location=file:${TRIM_PKGETC}/"
+    CMD="${CMD} --server.max-http-header-size=524288"
+
+    log_msg "Command: ${CMD}"
+
+    # 启动Reader进程
+    cd ${TRIM_APPDEST}
+    nohup ${CMD} >> ${LOG_FILE} 2>&1 &
+    
+    # 写入PID
+    printf "%s" "$!" > ${PID_FILE}
+    log_msg "Reader started with PID: $!"
+    
+    # 等待启动
+    sleep 3
+    
+    if status; then
+        log_msg "Reader started successfully"
+        return 0
+    else
+        log_msg "Reader failed to start"
+        return 1
+    fi
+}
+
+stop_process() {
+    log_msg "Stopping Reader process..."
+
+    local pid=""
+    
+    # 从PID文件获取PID
+    if [ -r "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        log_msg "PID from file: ${pid}"
+        
+        if ! check_process "${pid}"; then
+            rm -f "${PID_FILE}"
+            pid=""
+        fi
+    fi
+    
+    # 如果PID文件方法失败，搜索进程
+    if [ -z "${pid}" ]; then
+        pid=$(ps aux | grep -v grep | grep "reader.*\.jar" | grep "${TRIM_APPDEST}" | awk '{print $2}' | head -n 1)
+        
+        if [ -z "${pid}" ]; then
+            log_msg "Process not found"
+            rm -f "${PID_FILE}"
+            return 0
+        fi
+        log_msg "Found PID from ps: ${pid}"
+    fi
+
+    # 发送TERM信号
+    log_msg "Sending TERM signal to PID: ${pid}"
+    kill -TERM ${pid} >> ${LOG_FILE} 2>&1
+
+    # 等待进程退出
+    local count=0
+    while check_process "${pid}" && [ $count -lt 15 ]; do
+        sleep 1
+        count=$((count + 1))
+        log_msg "Waiting for process to terminate... (${count}s/15s)"
+    done
+
+    # 如果还在运行，强制杀死
+    if check_process "${pid}"; then
+        log_msg "Sending KILL signal to PID: ${pid}"
+        kill -KILL "${pid}" >> ${LOG_FILE} 2>&1
+        sleep 1
+    fi
+    
+    rm -f "${PID_FILE}"
+    log_msg "Reader stopped"
+    return 0
+}
+
+check_process() {
+    local pid=$1
+    if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+status() {
+    # 检查PID文件
+    if [ -f "${PID_FILE}" ]; then
+        local pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            # 验证是否是Reader进程
+            if ps aux | grep -v grep | grep "reader.*\.jar" | awk '{print $2}' | grep -q "^${pid}$"; then
+                return 0
+            fi
+        fi
+        rm -f "${PID_FILE}"
+    fi
+
+    # 回退：搜索进程
+    local pid=$(ps aux | grep -v grep | grep "reader.*\.jar" | grep "${TRIM_APPDEST}" | awk '{print $2}' | head -n 1)
+    if [ -n "${pid}" ]; then
+        printf "%s" "${pid}" > ${PID_FILE}
+        log_msg "Found running process PID=${pid}, repaired PID_FILE"
+        return 0
+    fi
+    
+    return 1
+}
+
+case $1 in
+start)
+    start_process
+    ;;
+stop)
+    stop_process
+    ;;
+status)
+    if status; then 
+        exit 0
+    else 
+        exit 3
+    fi
+    ;;
+*)
+    exit 1
+    ;;
+esac

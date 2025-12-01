@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Reader 卸载后回调脚本
+# 根据用户选择是否删除数据
+
+# 检查用户是否选择删除数据
+if [ "${wizard_data_action}" = "delete" ]; then
+    # 删除数据目录
+    if [ -d "${TRIM_PKGVAR}" ]; then
+        rm -rf "${TRIM_PKGVAR}"
+    fi
+    
+    # 删除共享目录中的数据
+    if [ -d "${TRIM_SHARES}/reader" ]; then
+        rm -rf "${TRIM_SHARES}/reader"
+    fi
+fi
+
+exit 0

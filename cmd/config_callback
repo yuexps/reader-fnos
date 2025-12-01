@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Reader 配置回调脚本
+# 使用配置向导中的用户输入更新配置文件
+
+# 从向导获取配置
+RUN_MODE="${wizard_run_mode:-}"
+INVITE_CODE="${wizard_invite_code:-}"
+SECURE_KEY="${wizard_secure_key:-}"
+USER_LIMIT="${wizard_user_limit:-}"
+CACHE_CHAPTER="${wizard_cache_chapter:-}"
+
+CONFIG_FILE="${TRIM_PKGETC}/application.properties"
+
+# 如果配置文件存在且有向导输入，则更新配置
+if [ -f "${CONFIG_FILE}" ]; then
+    # 备份原配置
+    cp "${CONFIG_FILE}" "${CONFIG_FILE}.bak"
+    
+    # 更新运行模式
+    if [ -n "$RUN_MODE" ]; then
+        if [ "$RUN_MODE" = "single" ]; then
+            sed -i 's/^reader.app.secure=.*/reader.app.secure=false/' "${CONFIG_FILE}"
+        else
+            sed -i 's/^reader.app.secure=.*/reader.app.secure=true/' "${CONFIG_FILE}"
+        fi
+    fi
+    
+    # 更新邀请码（允许为空）
+    if [ -n "$wizard_invite_code" ] || [ "$wizard_invite_code" = "" ]; then
+        sed -i "s/^reader.app.inviteCode=.*/reader.app.inviteCode=${INVITE_CODE}/" "${CONFIG_FILE}"
+    fi
+    
+    # 更新管理密码
+    if [ -n "$wizard_secure_key" ] || [ "$wizard_secure_key" = "" ]; then
+        sed -i "s/^reader.app.secureKey=.*/reader.app.secureKey=${SECURE_KEY}/" "${CONFIG_FILE}"
+    fi
+    
+    # 更新用户上限
+    if [ -n "$USER_LIMIT" ]; then
+        sed -i "s/^reader.app.userLimit=.*/reader.app.userLimit=${USER_LIMIT}/" "${CONFIG_FILE}"
+    fi
+    
+    # 更新缓存设置
+    if [ -n "$CACHE_CHAPTER" ]; then
+        sed -i "s/^reader.app.cacheChapterContent=.*/reader.app.cacheChapterContent=${CACHE_CHAPTER}/" "${CONFIG_FILE}"
+    fi
+fi
+
+exit 0
