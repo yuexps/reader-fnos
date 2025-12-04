@@ -11,8 +11,8 @@ if [ "${wizard_data_action}" = "delete" ]; then
     fi
     
     # 删除共享目录中的数据
-    if [ -d "${TRIM_SHARES}/reader" ]; then
-        rm -rf "${TRIM_SHARES}/reader"
+    if [ -d "${TRIM_SHARES}" ]; then
+        rm -rf "${TRIM_SHARES}"
     fi
 fi
 
